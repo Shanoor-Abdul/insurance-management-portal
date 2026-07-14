@@ -1,0 +1,24 @@
+{
+  "name": "insurance-management-portal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Insurance Management Portal with Next.js App Router, micro-frontend architecture, i18n, RBAC, and Tailwind CSS",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "turbo": "^1.13.0",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
