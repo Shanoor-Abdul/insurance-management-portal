@@ -1,8 +1,11 @@
-import { policies, claims, users, statements, notifications, auditLogs } from "../data";
-import type { Policy, Claim, User, Statement, LOB, PolicyStatus, ClaimStatus, UserRole } from "../types";
+import type { Policy, Claim, User, Statement, LOB, PolicyStatus, ClaimStatus } from "../types";
 
-function wait(ms = 300) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+const baseUrl = typeof window === "undefined" ? process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000" : "";
+
+async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(`${baseUrl}${url}`, options);
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
 }
 
 export async function getPolicies(filters?: {
@@ -12,34 +15,25 @@ export async function getPolicies(filters?: {
   startDate?: string;
   endDate?: string;
 }) {
-  await wait();
-  let result = [...policies];
-  if (filters?.lob && filters.lob !== "All") result = result.filter((p) => p.lob === filters.lob);
-  if (filters?.status && filters.status !== "All") result = result.filter((p) => p.status === filters.status);
-  if (filters?.search) {
-    const q = filters.search.toLowerCase();
-    result = result.filter(
-      (p) =>
-        p.policyNumber.toLowerCase().includes(q) ||
-        p.customer.name.toLowerCase().includes(q)
-    );
-  }
-  if (filters?.startDate) result = result.filter((p) => p.startDate >= filters.startDate!);
-  if (filters?.endDate) result = result.filter((p) => p.endDate <= filters.endDate!);
-  return result;
+  const params = new URLSearchParams();
+  if (filters?.lob && filters.lob !== "All") params.set("lob", filters.lob);
+  if (filters?.status && filters.status !== "All") params.set("status", filters.status);
+  if (filters?.search) params.set("search", filters.search);
+  if (filters?.startDate) params.set("startDate", filters.startDate);
+  if (filters?.endDate) params.set("endDate", filters.endDate);
+  return fetchJson<Policy[]>(`/api/policies?${params.toString()}`);
 }
 
 export async function getPolicyById(id: string) {
-  await wait();
-  return policies.find((p) => p.id === id) || null;
+  return fetchJson<Policy | null>(`/api/policies/${id}`);
 }
 
 export async function assignPolicy(policyId: string, userIds: string[]) {
-  await wait();
-  const policy = policies.find((p) => p.id === policyId);
-  if (!policy) return null;
-  policy.assignedUsers = Array.from(new Set([...policy.assignedUsers, ...userIds]));
-  return policy;
+  return fetchJson<Policy>(`/api/policies/${policyId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ assignedUsers: userIds })
+  });
 }
 
 export async function getClaims(filters?: {
@@ -47,71 +41,55 @@ export async function getClaims(filters?: {
   status?: ClaimStatus | "All";
   search?: string;
 }) {
-  await wait();
-  let result = [...claims];
-  if (filters?.lob && filters.lob !== "All") result = result.filter((c) => c.lob === filters.lob);
-  if (filters?.status && filters.status !== "All") result = result.filter((c) => c.status === filters.status);
-  if (filters?.search) {
-    const q = filters.search.toLowerCase();
-    result = result.filter((c) => c.claimNumber.toLowerCase().includes(q) || c.customer.name.toLowerCase().includes(q));
-  }
-  return result;
+  const params = new URLSearchParams();
+  if (filters?.lob && filters.lob !== "All") params.set("lob", filters.lob);
+  if (filters?.status && filters.status !== "All") params.set("status", filters.status);
+  if (filters?.search) params.set("search", filters.search);
+  return fetchJson<Claim[]>(`/api/claims?${params.toString()}`);
 }
 
 export async function getClaimById(id: string) {
-  await wait();
-  return claims.find((c) => c.id === id) || null;
+  return fetchJson<Claim | null>(`/api/claims/${id}`);
 }
 
 export async function getStatements(filters?: { lob?: LOB | "All" }) {
-  await wait();
-  let result = [...statements];
-  if (filters?.lob && filters.lob !== "All") result = result.filter((s) => s.lob === filters.lob);
-  return result;
+  const params = new URLSearchParams();
+  if (filters?.lob && filters.lob !== "All") params.set("lob", filters.lob);
+  return fetchJson<Statement[]>(`/api/statements?${params.toString()}`);
 }
 
 export async function getStatementById(id: string) {
-  await wait();
-  return statements.find((s) => s.id === id) || null;
+  return fetchJson<Statement | null>(`/api/statements/${id}`);
 }
 
 export async function getUsers() {
-  await wait();
-  return [...users];
+  return fetchJson<User[]>("/api/users");
 }
 
 export async function getUserById(id: string) {
-  await wait();
-  return users.find((u) => u.id === id) || null;
+  return fetchJson<User | null>(`/api/users/${id}`);
 }
 
 export async function createUser(user: Omit<User, "id">) {
-  await wait();
-  const newUser = { ...user, id: `u${users.length + 1}` };
-  users.push(newUser);
-  return newUser;
+  return fetchJson<User>("/api/users", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(user)
+  });
 }
 
 export async function updateUser(id: string, data: Partial<User>) {
-  await wait();
-  const idx = users.findIndex((u) => u.id === id);
-  if (idx === -1) return null;
-  users[idx] = { ...users[idx], ...data };
-  return users[idx];
+  return fetchJson<User>(`/api/users/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
 }
 
 export async function deleteUser(id: string) {
-  await wait();
-  const idx = users.findIndex((u) => u.id === id);
-  if (idx === -1) return false;
-  users.splice(idx, 1);
-  return true;
+  return fetchJson<{ success: boolean }>(`/api/users/${id}`, { method: "DELETE" });
 }
 
-export async function getNotifications() {
-  return [...notifications];
-}
-
-export async function getAuditLogs() {
-  return [...auditLogs];
+export async function getCurrentUser() {
+  return fetchJson<User | null>("/api/auth/me");
 }

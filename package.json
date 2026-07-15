@@ -8,13 +8,15 @@
     "dev": "turbo run dev --parallel",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "seed": "tsx packages/lib/src/db/seed.ts"
   },
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "devDependencies": {
+    "tsx": "^4.7.0",
     "turbo": "^1.13.0",
     "typescript": "^5.4.0"
   },

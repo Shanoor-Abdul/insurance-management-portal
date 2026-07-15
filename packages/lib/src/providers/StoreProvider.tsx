@@ -2,11 +2,13 @@
 
 import * as React from "react";
 import { useAppStore } from "../store";
-import { users } from "../data";
+import { getCurrentUser } from "../api";
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
-    useAppStore.getState().setUser(users[0]);
+    getCurrentUser().then((user) => {
+      if (user) useAppStore.getState().setUser(user);
+    });
   }, []);
   return <>{children}</>;
 }
