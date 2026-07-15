@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { users, notifications as initialNotifications, auditLogs as initialAuditLogs } from "../data";
 import type { User, Notification, AuditLog, Lang } from "../types";
 
 interface AppState {
@@ -20,16 +21,16 @@ interface AppState {
 export const useAppStore = create<AppState>((set) => ({
   lang: "en",
   setLang: (lang) => set({ lang }),
-  user: null,
+  user: users[0] || null,
   setUser: (user) => set({ user }),
-  notifications: [],
+  notifications: initialNotifications,
   addNotification: (notification) =>
     set((state) => ({ notifications: [notification, ...state.notifications] })),
   markNotificationRead: (id) =>
     set((state) => ({
       notifications: state.notifications.map((n) => (n.id === id ? { ...n, read: true } : n))
     })),
-  auditLogs: [],
+  auditLogs: initialAuditLogs,
   addAuditLog: (log) => set((state) => ({ auditLogs: [log, ...state.auditLogs] })),
   selectedPolicyIds: [],
   togglePolicySelection: (id) =>
