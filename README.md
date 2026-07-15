@@ -77,3 +77,4 @@ npm run seed      # Seed the MongoDB database
 - Runtime Module Federation is not used because it is not yet stable with the Next.js App Router. The monorepo structure keeps modules separated so they can be federated later.
 - The app uses `apps/web/src/app/api` REST routes that read from and write to MongoDB.
 - To use MongoDB Atlas, update `MONGODB_URI` in `apps/web/.env.local`.
+- If your Atlas password contains `@` or `:`, make sure they are URL-encoded (`%40` for `@`, `%3A` for `:`) before pasting the connection string.
