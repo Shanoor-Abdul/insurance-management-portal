@@ -73,6 +73,7 @@ export const en = {
   },
   claims: {
     title: "Claims",
+    create: "Create Claim",
     filters: {
       lob: "LOB",
       status: "Claim Status",
@@ -162,6 +163,7 @@ export const en = {
     error: "Something went wrong",
     submit: "Submit",
     next: "Next",
-    previous: "Previous"
+    previous: "Previous",
+    optional: "(optional)"
   }
 };

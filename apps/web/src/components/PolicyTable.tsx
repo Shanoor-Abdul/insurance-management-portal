@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Badge, Button, Pagination } from "@insurance/ui";
-import { formatDate, formatCurrency, type Policy } from "@insurance/lib";
+import { formatDate, formatCurrency, getUsers, type Policy, type User } from "@insurance/lib";
 
 export function PolicyTable({ policies }: { policies: Policy[] }) {
   const { t } = useTranslation();
@@ -13,8 +14,16 @@ export function PolicyTable({ policies }: { policies: Policy[] }) {
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
-  const paginated = policies.slice((page - 1) * pageSize, page * pageSize);
-  const totalPages = Math.ceil(policies.length / pageSize) || 1;
+  const { data: users = [] } = useQuery({ queryKey: ["users"], queryFn: getUsers });
+
+  const userMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    (users as User[]).forEach((u) => { map[u.id] = u.name; });
+    return map;
+  }, [users]);
+
+  const paginated = useMemo(() => policies.slice((page - 1) * pageSize, page * pageSize), [policies, page]);
+  const totalPages = useMemo(() => Math.ceil(policies.length / pageSize) || 1, [policies]);
 
   const statusVariant: Record<string, "default" | "success" | "warning" | "danger"> = {
     Active: "success",
@@ -49,11 +58,20 @@ export function PolicyTable({ policies }: { policies: Policy[] }) {
               <TableCell>{formatDate(p.startDate)}</TableCell>
               <TableCell>{formatDate(p.endDate)}</TableCell>
               <TableCell>{formatCurrency(p.premium)}</TableCell>
-              <TableCell>{p.assignedUsers.length ? p.assignedUsers.join(", ") : "—"}</TableCell>
               <TableCell>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => router.push(`/${lang}/policies/${p.id}`)}>{t("policies.actions.view")}</Button>
-                </div>
+                {p.assignedUsers.length > 0
+                  ? <span className="flex flex-wrap gap-1">
+                      {p.assignedUsers.map((uid) => (
+                        <span key={uid} className="inline-block rounded bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700">
+                          {userMap[uid] || uid}
+                        </span>
+                      ))}
+                    </span>
+                  : <span className="text-gray-400">—</span>
+                }
+              </TableCell>
+              <TableCell>
+                <Button variant="ghost" size="sm" onClick={() => router.push(`/${lang}/policies/${p.id}`)}>{t("policies.actions.view")}</Button>
               </TableCell>
             </TableRow>
           ))}

@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
-import { getUsers, type User } from "@insurance/lib";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getUsers, deleteUser, type User } from "@insurance/lib";
 import { Card, CardContent, Button, Loader, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, ConfirmDialog, Badge } from "@insurance/ui";
 import { useParams, useRouter } from "next/navigation";
 
@@ -11,12 +11,23 @@ export default function UsersPage() {
   const { t } = useTranslation();
   const { lang } = useParams<{ lang: string }>();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { data, isLoading, refetch } = useQuery({ queryKey: ["users"], queryFn: getUsers });
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteUser(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      refetch();
+    }
+  });
+
   const handleDelete = async () => {
-    setDeleteId(null);
-    refetch();
+    if (deleteId) {
+      deleteMutation.mutate(deleteId);
+      setDeleteId(null);
+    }
   };
 
   return (
@@ -27,7 +38,11 @@ export default function UsersPage() {
       </div>
       <Card>
         <CardContent>
-          {isLoading ? <Loader /> : (
+          {isLoading ? <Loader /> : !data || data.length === 0 ? (
+            <div className="py-12 text-center text-gray-500">
+              {t("common.noResults")}
+            </div>
+          ) : (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -50,7 +65,7 @@ export default function UsersPage() {
                     <TableCell>
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm" onClick={() => router.push(`/${lang}/users/${user.id}`)}>{t("common.view")}</Button>
-                        <Button variant="destructive" size="sm" onClick={() => setDeleteId(user.id)}>{t("common.delete")}</Button>
+                        <Button variant="destructive" size="sm" disabled={deleteMutation.isPending} onClick={() => setDeleteId(user.id)}>{t("common.delete")}</Button>
                       </div>
                     </TableCell>
                   </TableRow>

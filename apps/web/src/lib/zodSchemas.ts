@@ -6,15 +6,27 @@ export const userSchema = z.object({
   email: z.string().email("Invalid email"),
   mobile: z.string().min(1, "Mobile is required"),
   username: z.string().min(3, "Username must be at least 3 characters"),
-  password: z.string().min(6, "Password must be at least 6 characters").optional(),
+  password: z.string().optional(),
   confirmPassword: z.string().optional(),
   department: z.string().min(1, "Department is required"),
   designation: z.string().min(1, "Designation is required"),
   status: z.enum(["Active", "Inactive"]),
   role: z.enum(["admin", "manager", "agent", "viewer"])
-}).refine((data) => !data.password || data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"]
+}).superRefine((data, ctx) => {
+  if (data.password && data.password.length < 6) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Password must be at least 6 characters",
+      path: ["password"]
+    });
+  }
+  if (data.password && data.password !== data.confirmPassword) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Passwords do not match",
+      path: ["confirmPassword"]
+    });
+  }
 });
 
 export type UserFormData = z.infer<typeof userSchema>;

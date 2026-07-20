@@ -32,5 +32,6 @@ export const navigationPermissions = [
   { id: "policies", href: "/policies" },
   { id: "claims", href: "/claims" },
   { id: "statements", href: "/statements" },
-  { id: "users", href: "/users" }
+  { id: "users", href: "/users" },
+  { id: "settings", href: "/settings" }
 ] as const;

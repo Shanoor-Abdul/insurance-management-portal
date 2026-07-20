@@ -73,6 +73,7 @@ export const ar = {
   },
   claims: {
     title: "المطالبات",
+    create: "إنشاء مطالبة",
     filters: {
       lob: "خط العمل",
       status: "حالة المطالبة",
@@ -162,6 +163,7 @@ export const ar = {
     error: "حدث خطأ",
     submit: "إرسال",
     next: "التالي",
-    previous: "السابق"
+    previous: "السابق",
+    optional: "(اختياري)"
   }
 };

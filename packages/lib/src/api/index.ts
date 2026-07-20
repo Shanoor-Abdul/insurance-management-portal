@@ -93,3 +93,26 @@ export async function deleteUser(id: string) {
 export async function getCurrentUser() {
   return fetchJson<User | null>("/api/auth/me");
 }
+
+export async function processPayment(statementId: string, amount: number) {
+  return fetchJson<{ success: boolean; transactionId: string; newStatus: string; paidAmount: number; pendingAmount: number }>(`/api/statements/${statementId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ amount, action: "pay" })
+  });
+}
+
+export async function createClaim(claim: {
+  policyId: string;
+  policyNumber: string;
+  customer: { name: string; email: string; mobile: string };
+  lob: string;
+  amount: number;
+  notes?: string;
+}) {
+  return fetchJson<Claim>("/api/claims", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(claim)
+  });
+}

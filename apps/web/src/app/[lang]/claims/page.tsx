@@ -1,23 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { getClaims, type LOB, type ClaimStatus } from "@insurance/lib";
-import { Card, CardHeader, CardTitle, CardContent, Loader, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Pagination } from "@insurance/ui";
-import { useParams } from "next/navigation";
+import { getClaims, type LOB, type ClaimStatus, type Claim } from "@insurance/lib";
+import { Card, CardHeader, CardTitle, CardContent, Loader, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Pagination, Button } from "@insurance/ui";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
-interface ClaimFilters {
-  lob: LOB | "All";
-  status: ClaimStatus | "All";
-  search: string;
-}
+const PAGE_SIZE = 10;
 
 export default function ClaimsPage() {
   const { t } = useTranslation();
   const { lang } = useParams<{ lang: string }>();
-  const [filters, setFilters] = useState<ClaimFilters>({ lob: "All", status: "All", search: "" });
+  const router = useRouter();
+  const [filters, setFilters] = useState({ lob: "All" as LOB | "All", status: "All" as ClaimStatus | "All", search: "" });
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = useQuery({
@@ -25,13 +22,21 @@ export default function ClaimsPage() {
     queryFn: () => getClaims(filters)
   });
 
-  const pageSize = 10;
-  const paginated = (data || []).slice((page - 1) * pageSize, page * pageSize);
-  const totalPages = Math.ceil((data || []).length / pageSize) || 1;
+  const paginated = useMemo(() => {
+    const list = data || [];
+    return list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  }, [data, page]);
+
+  const totalPages = useMemo(() => Math.ceil((data || []).length / PAGE_SIZE) || 1, [data]);
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">{t("claims.title")}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">{t("claims.title")}</h1>
+        <Button onClick={() => router.push(`/${lang}/claims/new`)}>
+          + {t("claims.create")}
+        </Button>
+      </div>
       <Card>
         <CardHeader><CardTitle>{t("common.filter")}</CardTitle></CardHeader>
         <CardContent>
@@ -49,13 +54,21 @@ export default function ClaimsPage() {
               <option value="Rejected">Rejected</option>
               <option value="Settled">Settled</option>
             </select>
-            <input type="text" placeholder={t("claims.filters.search")} className="rounded border p-2" value={filters.search} onChange={(e) => { setFilters({ ...filters, search: e.target.value }); setPage(1); }} />
+            <input
+              type="text"
+              placeholder={t("claims.filters.search")}
+              className="rounded border p-2"
+              value={filters.search}
+              onChange={(e) => { setFilters({ ...filters, search: e.target.value }); setPage(1); }}
+            />
           </div>
         </CardContent>
       </Card>
       <Card>
         <CardContent>
-          {isLoading ? <Loader /> : (
+          {isLoading ? <Loader /> : !paginated || paginated.length === 0 ? (
+            <div className="py-12 text-center text-gray-500">{t("common.noResults")}</div>
+          ) : (
             <>
               <Table>
                 <TableHeader>
@@ -70,7 +83,7 @@ export default function ClaimsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginated.map((claim) => (
+                  {paginated.map((claim: Claim) => (
                     <TableRow key={claim.id}>
                       <TableCell>
                         <Link href={`/${lang}/claims/${claim.id}`} className="text-indigo-600 hover:underline">{claim.claimNumber}</Link>
@@ -79,7 +92,7 @@ export default function ClaimsPage() {
                       <TableCell>{claim.customer.name}</TableCell>
                       <TableCell>{claim.lob}</TableCell>
                       <TableCell>${claim.amount}</TableCell>
-                      <TableCell><Badge variant={claim.status === "Approved" ? "success" : claim.status === "Rejected" ? "danger" : "warning"}>{claim.status}</Badge></TableCell>
+                      <TableCell><Badge variant={claim.status === "Approved" ? "success" : claim.status === "Rejected" ? "danger" : claim.status === "Settled" ? "default" : "warning"}>{claim.status}</Badge></TableCell>
                       <TableCell>{claim.submittedDate}</TableCell>
                     </TableRow>
                   ))}
